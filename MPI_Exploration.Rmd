@@ -1,0 +1,215 @@
+---
+title: "Development Analysis"
+author: "Peter Finnerty"
+output: html_document
+---
+
+
+This is an exploration of several Development focused Data sets.
+
+
+```{r results='hide', message=FALSE, warning=FALSE}
+library(ggplot2)
+library(tidyverse)
+library(ggrepel)
+library(kableExtra)
+```
+
+####Oxford Multidimensional Poverty Datasets 
+
+```{r}
+setwd('/Users/peterfinnerty/R Documents/Independent/Development_Projects/Datasets/Oxford_Dev')
+national <- read.csv('MPI_national.csv')
+subnational <- read.csv('MPI_subnational.csv')
+```
+
+
+MPI scores measure poverty on multiple dimensions for each country. They allow inter and intracountry comparisons of poverty, capturing more information than simple PPP thresholds.
+
+###Top Ten Countries by Rural Poverty:
+```{r results = 'asis'}
+national %>% 
+  mutate(Rural.Rank = min_rank(-MPI.Rural)) %>% 
+  select(Rural.Rank, Country, MPI.Rural) %>%
+  arrange(desc(MPI.Rural)) %>% 
+  head(10) %>% 
+  kable() %>% 
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = FALSE, position = "left")
+```
+
+###Top Ten Countries by Urban Poverty:
+```{r results = 'asis'}
+national %>% 
+  mutate(Rural.Rank = min_rank(-MPI.Urban)) %>% 
+  select(Rural.Rank, Country, MPI.Urban) %>%
+  arrange(desc(MPI.Urban)) %>% 
+  head(10) %>% 
+  kable() %>% 
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = FALSE, position = "left")
+```
+
+###Countries with the Worst Regional Differences:
+```{r results = 'asis'}
+max <- subnational %>% 
+  group_by(Country) %>%
+  filter(MPI.Regional == max(MPI.Regional)) %>%
+  select(ISO.country.code, Country, Sub.national.region, MPI.Regional, MPI.National) %>% 
+  rename(Highest.Region = Sub.national.region, Highest.MPI = MPI.Regional)
+min <- subnational %>% 
+  group_by(Country) %>%
+  filter(MPI.Regional == min(MPI.Regional)) %>%
+  select(ISO.country.code, Country, Sub.national.region, MPI.Regional, MPI.National) %>% 
+  rename(Lowest.Region = Sub.national.region, Lowest.MPI = MPI.Regional)
+gaps <- merge(max, min) %>% 
+  mutate(MPI.Gap = Highest.MPI - Lowest.MPI)
+
+gaps %>%
+  mutate(Rank = min_rank(-MPI.Gap)) %>% 
+  select(Rank, Country, Highest.Region, Lowest.Region, MPI.Gap) %>%
+  arrange(Rank) %>% 
+  head(10) %>% 
+  kable() %>% 
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), 
+                full_width = FALSE, position = "left")
+```
+
+Let's look add more country level information.
+
+####World Bank Income Data:
+```{r}
+setwd('/Users/peterfinnerty/R Documents/Independent/Development_Projects/Datasets/WB/WB_Development_Indicators')
+Country_data <- read.csv('WDICountry.csv')
+WDI <- read.csv('2014_WDI_Clean.csv')
+df <- merge(gaps, WDI, by = 'ISO.country.code')
+```
+
+###National MPI vs. GNI Per Capita:
+```{r message=FALSE, warning=FALSE}
+df %>% 
+  ggplot(aes(x = MPI.National, y = GNI_Per_Capita_PPP_2011_Constant)) +
+  geom_point() +
+  geom_smooth(se = FALSE)
+```
+
+We can see that countries with higher incomes experience lower average MPI Scores.
+
+Let's look at countries where this doesn't hold. We need to find nations with high MPIs and high GNI per capita.
+
+###High/Extreme MPIs, ranked by their GNIs:
+```{r}
+df %>% 
+  drop_na(GNI_Per_Capita_PPP_2011_Constant) %>% 
+  filter(MPI.National > .3 | Highest.MPI > .5) %>% 
+  mutate(Rank = min_rank(-GNI_Per_Capita_PPP_2011_Constant)) %>% 
+  arrange(desc(GNI_Per_Capita_PPP_2011_Constant)) %>% 
+  select(Rank, Country, GNI_Per_Capita_PPP_2011_Constant, MPI.Gap, MPI.National, 
+         Infant_Mortality_per_1000, Life_Expectancy_Birth) %>% 
+  kable() %>% 
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = FALSE, position = "left")
+```
+
+We can see that Nigeria has the highest GNI, yet has an Extreme MPI Gap.
+
+Let's see look at Nigeria in detail.
+
+###MPI by region in Nigeria:
+```{r}
+subnational %>% 
+  filter(Country == 'Nigeria') %>%
+  ggplot() + geom_bar(mapping = aes(x = reorder(Sub.national.region, -MPI.Regional), y = MPI.Regional), stat = 'identity') +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1), axis.title.x=element_blank())
+```
+
+Unsurprisingly, agricultural regions account for the highest MPIs and Lagos has the lowest MPI score.
+
+Nigeria is an interesting example, as Lagos is one of the most developed cities in the Africa. 
+The comparison between max MPI and min MPI may unfairly punish nations with economically strong cities.
+
+To test this, let's see where Lagos ranks in terms of all MPI regions in SSA.
+
+###SSA Regions by MPI:
+```{r}
+
+sub <- merge(subnational, Country_data[, c("Country.Code", "Income.Group")], 
+             by.x='ISO.country.code', by.y = 'Country.Code')
+sub %>% 
+  filter(World.region == 'Sub-Saharan Africa') %>%
+  mutate(Rank = min_rank(MPI.Regional)) %>% 
+  arrange(Rank) %>% 
+  select(Rank, Sub.national.region, Country, MPI.Regional, MPI.National) %>%
+  filter(Rank <= 10) %>% 
+  kable() %>% 
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = FALSE, position = "left")
+```
+
+As expected, Lagos has one of the lowest MPI scores in all of SSA. Our previous comparison penalizes Nigeria for this economic prosperity.
+
+We can handle this by comparing the maximum MPI region to the national average.
+
+####Max MPI to National Average:
+
+```{R}
+gaps <- gaps %>% mutate(MPI.Gap.Avg = MPI.National - Lowest.MPI)
+df <- merge(gaps, WDI, by = 'ISO.country.code')
+df %>% 
+  drop_na(GNI_Per_Capita_PPP_2011_Constant) %>% 
+  filter(MPI.National > .3 | Highest.MPI > .5) %>% 
+  mutate(Rank = min_rank(-MPI.Gap.Avg)) %>% 
+  arrange(Rank) %>% 
+  select(Rank, Country, MPI.Gap.Avg, Highest.MPI, Highest.Region, 
+         MPI.National, Lowest.MPI, Lowest.Region, MPI.Gap) %>% 
+  kable() %>% 
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = FALSE, position = "left")
+```
+
+Here we can see that the impact of Lagos on Nigeria's rank is minimized. 
+Additionally, Ethiopia and Mozambique stand out as having extremely high MPI regions versus the average, indicating extreme disparity between those living in Addia Ababa/Maputo and those not.
+
+Let's examine the regions of Ethiopia and Mozambique to see this:
+
+####Ethiopia Regions:
+```{r}
+subnational %>% 
+  filter(Country == 'Ethiopia') %>%
+  ggplot() + geom_bar(mapping = aes(x = reorder(Sub.national.region, -MPI.Regional), y = MPI.Regional), stat = 'identity') +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1), axis.title.x=element_blank())
+```
+
+####Mozambique Regions:
+```{r}
+subnational %>% 
+  filter(Country == 'Mozambique') %>%
+  ggplot() + geom_bar(mapping = aes(x = reorder(Sub.national.region, -MPI.Regional), y = MPI.Regional), stat = 'identity') +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1), axis.title.x=element_blank())
+```
+
+You can see the disparity is drastic in these countries. 
+
+
+To get a full picture of disparity, let's look at countries where the difference between the 1st and 2nd lowest MPIs is the greatest.
+
+This jump should highlight countries where wealth and development is highly concentrated.
+
+####Ranked by MPI Jump:
+```{r}
+sub <- subnational %>% 
+  group_by(Country) %>% 
+  mutate(ranks = order(order(MPI.Regional))) %>% 
+  arrange(Country, ranks) %>% 
+  mutate(lag_MPI = MPI.Regional - lag(MPI.Regional)) %>% 
+  filter(ranks == 2)
+df <- merge(df, sub[, c('ISO.country.code', 'lag_MPI')], by = 'ISO.country.code') %>% 
+  rename(MPI.Jump = lag_MPI)
+df %>% 
+  drop_na(GNI_Per_Capita_PPP_2011_Constant) %>% 
+  filter(MPI.National > .3 | Highest.MPI > .5) %>% 
+  mutate(Rank = min_rank(-MPI.Jump)) %>% 
+  arrange(Rank) %>% 
+  select(Rank, Country, MPI.Jump, MPI.Gap.Avg, Highest.MPI, Highest.Region, 
+         MPI.National, Lowest.MPI, Lowest.Region) %>% 
+  head(15) %>% 
+  kable() %>% 
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = FALSE, position = "left")
+```
+
+The concentration of poverty in these countries is the highest outside of privileged areas.
