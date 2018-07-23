@@ -19,7 +19,7 @@ library(ggrepel)
 library(kableExtra)
 ```
 
-####Oxford Multidimensional Poverty Datasets 
+#### Oxford Multidimensional Poverty Datasets 
 
 
 ```r
@@ -31,7 +31,7 @@ subnational <- read.csv('MPI_subnational.csv')
 
 MPI scores measure poverty on multiple dimensions for each country. They allow inter and intracountry comparisons of poverty, capturing more information than simple PPP thresholds.
 
-###Top Ten Countries by Rural Poverty:
+### Top Ten Countries by Rural Poverty:
 
 ```r
 national %>% 
@@ -105,7 +105,7 @@ national %>%
 </tbody>
 </table>
 
-###Top Ten Countries by Urban Poverty:
+### Top Ten Countries by Urban Poverty:
 
 ```r
 national %>% 
@@ -179,7 +179,7 @@ national %>%
 </tbody>
 </table>
 
-###Countries with the Worst Regional Differences:
+### Countries with the Worst Regional Differences:
 
 ```r
 max <- subnational %>% 
@@ -291,7 +291,7 @@ gaps %>%
 
 Let's look add more country level information.
 
-####World Bank Income Data:
+#### World Bank Income Data:
 
 ```r
 setwd('/Users/peterfinnerty/R Documents/Independent/Development_Projects/Datasets/WB/WB_Development_Indicators')
@@ -315,7 +315,7 @@ We can see that countries with higher incomes experience lower average MPI Score
 
 Let's look at countries where this doesn't hold. We need to find nations with high MPIs and high GNI per capita.
 
-###High/Extreme MPIs, ranked by their GNIs:
+### High/Extreme MPIs, ranked by their GNIs:
 
 ```r
 df %>% 
@@ -583,7 +583,7 @@ The comparison between max MPI and min MPI may unfairly punish nations with econ
 
 To test this, let's see where Lagos ranks in terms of all MPI regions in SSA.
 
-###SSA Regions by MPI:
+### SSA Regions by MPI:
 
 ```r
 sub <- merge(subnational, Country_data[, c("Country.Code", "Income.Group")], 
@@ -686,7 +686,7 @@ As expected, Lagos has one of the lowest MPI scores in all of SSA. Our previous 
 
 We can handle this by comparing the maximum MPI region to the national average.
 
-####Max MPI to National Average:
+#### Max MPI to National Average:
 
 
 ```r
@@ -990,7 +990,7 @@ Additionally, Ethiopia and Mozambique stand out as having extremely high MPI reg
 
 Let's examine the regions of Ethiopia and Mozambique to see this:
 
-####Ethiopia Regions:
+#### Ethiopia Regions:
 
 ```r
 subnational %>% 
@@ -1001,7 +1001,7 @@ subnational %>%
 
 ![](MPI_Exploration_files/figure-html/unnamed-chunk-12-1.png)<!-- -->
 
-####Mozambique Regions:
+#### Mozambique Regions:
 
 ```r
 subnational %>% 
@@ -1019,7 +1019,7 @@ To get a full picture of disparity, let's look at countries where the difference
 
 This jump should highlight countries where wealth and development is highly concentrated.
 
-####Ranked by MPI Jump:
+#### Ranked by MPI Jump:
 
 ```r
 sub <- subnational %>% 
