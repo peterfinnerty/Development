@@ -42,7 +42,8 @@ national %>%
   arrange(desc(MPI.Rural)) %>% 
   head(10) %>% 
   kable() %>% 
-  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = FALSE, position = "left")
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = FALSE,
+                position = "left")
 ```
 
 <table class="table table-striped table-hover table-condensed" style="width: auto !important; ">
@@ -306,7 +307,7 @@ df <- merge(gaps, WDI, by = 'ISO.country.code')
 
 ```r
 df %>% 
-  ggplot(aes(x = MPI.National, y = GNI_Per_Capita_PPP_2011_Constant)) +
+  ggplot(aes(x = MPI.National, y = GNI_Per_Capita_PPP)) +
   geom_point() +
   geom_smooth(se = FALSE)
 ```
@@ -321,26 +322,27 @@ Let's look at countries where this doesn't hold. We need to find nations with hi
 
 ```r
 df %>% 
-  drop_na(GNI_Per_Capita_PPP_2011_Constant) %>% 
+  drop_na(GNI_Per_Capita_PPP) %>% 
   filter(MPI.National > .3 | Highest.MPI > .5) %>% 
-  mutate(Rank = min_rank(-GNI_Per_Capita_PPP_2011_Constant)) %>% 
-  arrange(desc(GNI_Per_Capita_PPP_2011_Constant)) %>% 
-  select(Rank, Country, GNI_Per_Capita_PPP_2011_Constant, MPI.Gap, MPI.National, 
-         Infant_Mortality_per_1000, Life_Expectancy_Birth) %>% 
+  mutate(Rank = min_rank(-GNI_Per_Capita_PPP)) %>% 
+  arrange(desc(GNI_Per_Capita_PPP)) %>% 
+  select(Rank, Country, GNI_Per_Capita_PPP, MPI.Gap, MPI.National, 
+         Infant_Mortality_per_1000, Life_Expectancy) %>% 
   kable() %>% 
-  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = FALSE, position = "left")
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = FALSE,
+                position = "left", font_size = 10)
 ```
 
-<table class="table table-striped table-hover table-condensed" style="width: auto !important; ">
+<table class="table table-striped table-hover table-condensed" style="font-size: 10px; width: auto !important; ">
  <thead>
   <tr>
    <th style="text-align:right;"> Rank </th>
    <th style="text-align:left;"> Country </th>
-   <th style="text-align:right;"> GNI_Per_Capita_PPP_2011_Constant </th>
+   <th style="text-align:right;"> GNI_Per_Capita_PPP </th>
    <th style="text-align:right;"> MPI.Gap </th>
    <th style="text-align:right;"> MPI.National </th>
    <th style="text-align:right;"> Infant_Mortality_per_1000 </th>
-   <th style="text-align:right;"> Life_Expectancy_Birth </th>
+   <th style="text-align:right;"> Life_Expectancy </th>
   </tr>
  </thead>
 <tbody>
@@ -695,17 +697,18 @@ We can handle this by comparing the maximum MPI region to the national average.
 gaps <- gaps %>% mutate(MPI.Gap.Avg = MPI.National - Lowest.MPI)
 df <- merge(gaps, WDI, by = 'ISO.country.code')
 df %>% 
-  drop_na(GNI_Per_Capita_PPP_2011_Constant) %>% 
+  drop_na(GNI_Per_Capita_PPP) %>% 
   filter(MPI.National > .3 | Highest.MPI > .5) %>% 
   mutate(Rank = min_rank(-MPI.Gap.Avg)) %>% 
   arrange(Rank) %>% 
   select(Rank, Country, MPI.Gap.Avg, Highest.MPI, Highest.Region, 
          MPI.National, Lowest.MPI, Lowest.Region, MPI.Gap) %>% 
   kable() %>% 
-  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = FALSE, position = "left")
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = FALSE,
+                position = "left", font_size = 10)
 ```
 
-<table class="table table-striped table-hover table-condensed" style="width: auto !important; ">
+<table class="table table-striped table-hover table-condensed" style="font-size: 10px; width: auto !important; ">
  <thead>
   <tr>
    <th style="text-align:right;"> Rank </th>
@@ -997,8 +1000,11 @@ Let's examine the regions of Ethiopia and Mozambique to see this:
 ```r
 subnational %>% 
   filter(Country == 'Ethiopia') %>%
-  ggplot() + geom_bar(mapping = aes(x = reorder(Sub.national.region, -MPI.Regional), y = MPI.Regional), stat = 'identity') +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1), axis.title.x=element_blank())
+  ggplot() + 
+  geom_bar(mapping = aes(x = reorder(Sub.national.region, -MPI.Regional), 
+                         y = MPI.Regional), stat = 'identity') +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1),
+        axis.title.x=element_blank())
 ```
 
 ![](MPI_Exploration_files/figure-html/unnamed-chunk-12-1.png)<!-- -->
@@ -1008,8 +1014,11 @@ subnational %>%
 ```r
 subnational %>% 
   filter(Country == 'Mozambique') %>%
-  ggplot() + geom_bar(mapping = aes(x = reorder(Sub.national.region, -MPI.Regional), y = MPI.Regional), stat = 'identity') +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1), axis.title.x=element_blank())
+  ggplot() + 
+  geom_bar(mapping = aes(x = reorder(Sub.national.region, -MPI.Regional), 
+                         y = MPI.Regional), stat = 'identity') +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1),
+        axis.title.x=element_blank())
 ```
 
 ![](MPI_Exploration_files/figure-html/unnamed-chunk-13-1.png)<!-- -->
@@ -1033,7 +1042,7 @@ sub <- subnational %>%
 df <- merge(df, sub[, c('ISO.country.code', 'lag_MPI')], by = 'ISO.country.code') %>% 
   rename(MPI.Jump = lag_MPI)
 df %>% 
-  drop_na(GNI_Per_Capita_PPP_2011_Constant) %>% 
+  drop_na(GNI_Per_Capita_PPP) %>% 
   filter(MPI.National > .3 | Highest.MPI > .5) %>% 
   mutate(Rank = min_rank(-MPI.Jump)) %>% 
   arrange(Rank) %>% 
@@ -1041,10 +1050,11 @@ df %>%
          MPI.National, Lowest.MPI, Lowest.Region) %>% 
   head(15) %>% 
   kable() %>% 
-  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = FALSE, position = "left")
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = FALSE,
+                position = "left", font_size = 10)
 ```
 
-<table class="table table-striped table-hover table-condensed" style="width: auto !important; ">
+<table class="table table-striped table-hover table-condensed" style="font-size: 10px; width: auto !important; ">
  <thead>
   <tr>
    <th style="text-align:right;"> Rank </th>
