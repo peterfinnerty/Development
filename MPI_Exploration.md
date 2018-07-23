@@ -3,7 +3,9 @@ title: "Development Analysis"
 author: "Peter Finnerty"
 date: "2018-07-22"
 output:
-  html_document:
+  prettydoc::html_pretty:
+    theme: cayman
+    highlight: github
     keep_md: true
 ---
 

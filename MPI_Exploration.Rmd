@@ -3,7 +3,9 @@ title: "Development Analysis"
 author: "Peter Finnerty"
 date: "`r format(Sys.Date())`"
 output:
-  html_document:
+  prettydoc::html_pretty:
+    theme: cayman
+    highlight: github
     keep_md: true
 ---
 
